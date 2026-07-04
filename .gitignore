@@ -1,0 +1,24 @@
+/build/
+/build-*/
+/out/
+/CMakeUserPresets.json
+*.user
+*.suo
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+.vs/
+.idea/
+cmake-build-*/
+*.pdb
+*.dll
+*.lib
+*.exp
+*.ilk
+*.obj
+*.log
+key.txt
+
+# Private request-auth implementation (not published)
+/http_auth/
