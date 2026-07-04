@@ -2,6 +2,10 @@
 
 OpenLR2 CustomIR module for [Stellaverse IR](https://ir.stellabms.xyz/).
 
+This repository is published only to explain how the DLL module works and to help others develop similar modules by reference. Production endpoints and encryption headers are **not** provided in this repository.
+
+See [`examples/http_auth.sample.cpp`](examples/http_auth.sample.cpp) for a minimal skeleton: copy it to `http_auth/http_auth.cpp` and implement your own host, paths, and request authentication there.
+
 For the module to work, a `key.txt` file must be present in the same folder as the `.dll` file.
 It contains your Stellaverse IR API key (up to 32 characters).
 
@@ -27,9 +31,13 @@ Windows only (uses WinHTTP).
 Requires CMake 3.23+, Visual Studio 2022, a C++23 toolchain, and `VCPKG_ROOT` pointing at a [vcpkg](https://github.com/microsoft/vcpkg) install.
 Dependencies (`nlohmann-json`, `sqlite3`) are pulled via the manifest (`vcpkg.json`). WinHTTP remains a Windows system library.
 
-Request authentication and IR endpoint configuration live under `http_auth/` (not published). If absent, a public stub is linked so the project still builds; network calls will not work until the private implementation is present.
+Request authentication and IR endpoint configuration live under `http_auth/` (gitignored, not published). If absent, `src/http_auth_stub.cpp` is linked so the project still builds; network calls will not work until you add a real implementation.
 
 ```bash
+# Optional: start from the minimal sample, then fill in your IR details
+mkdir http_auth
+copy examples\http_auth.sample.cpp http_auth\http_auth.cpp
+
 cmake -B ./build --preset windows-vs-x64
 cmake --build ./build --preset windows-vs-x64-release
 ```
