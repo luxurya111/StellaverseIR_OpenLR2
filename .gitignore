@@ -19,6 +19,3 @@ cmake-build-*/
 *.obj
 *.log
 key.txt
-
-# Private request-auth implementation (not published)
-/http_auth/

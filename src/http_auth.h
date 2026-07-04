@@ -1,8 +1,5 @@
 #pragma once
 
-// Public interface for request authentication and IR endpoints.
-// Implementation lives under http_auth/ (not published).
-
 #include <string>
 #include <string_view>
 

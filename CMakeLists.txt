@@ -5,15 +5,6 @@ project(StellaverseIR_OpenLR2)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 
-set(HTTP_AUTH_PRIVATE_SRC "${CMAKE_SOURCE_DIR}/http_auth/http_auth.cpp")
-if(EXISTS "${HTTP_AUTH_PRIVATE_SRC}")
-    set(HTTP_AUTH_SRC "${HTTP_AUTH_PRIVATE_SRC}")
-    message(STATUS "HTTP auth: http_auth/")
-else()
-    set(HTTP_AUTH_SRC "${CMAKE_SOURCE_DIR}/src/http_auth_stub.cpp")
-    message(STATUS "HTTP auth: public stub (http_auth/ not found)")
-endif()
-
 add_library(StellaverseIR SHARED)
 
 set_target_properties(
@@ -28,11 +19,11 @@ target_sources(
     PRIVATE
         ./src/StellaverseIR.cpp
         ./src/http.cpp
+        ./src/http_auth.cpp
         ./src/log.cpp
         ./src/rank.cpp
         ./src/score_db.cpp
         ./src/score_payload.cpp
-        "${HTTP_AUTH_SRC}"
 )
 
 target_include_directories(
