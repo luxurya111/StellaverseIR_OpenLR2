@@ -2,8 +2,8 @@
 
 project(StellaverseIR_OpenLR2)
 
+find_package(SQLite3 REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-find_package(unofficial-sqlite3 CONFIG REQUIRED)
 
 add_library(StellaverseIR SHARED)
 
@@ -32,8 +32,8 @@ target_include_directories(
     PRIVATE ./src/
 )
 
+target_link_libraries(StellaverseIR PRIVATE SQLite3::SQLite3)
 target_link_libraries(StellaverseIR PRIVATE nlohmann_json::nlohmann_json)
-target_link_libraries(StellaverseIR PRIVATE unofficial::sqlite3::sqlite3)
 
 if(WIN32)
     target_link_libraries(StellaverseIR PRIVATE winhttp bcrypt)
