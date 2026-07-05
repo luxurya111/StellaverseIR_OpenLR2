@@ -27,6 +27,8 @@ unsigned short HttpAuth_Port();
 unsigned long HttpAuth_RequestFlags();
 const wchar_t* HttpAuth_Path(HttpAuthEndpoint endpoint);
 
+const char* HttpAuth_WebRankingUrlBase();
+
 // Stable pointer for MethodTable (static storage).
 const char* HttpAuth_WebRankingUrlTemplate();
 

@@ -31,6 +31,7 @@ constexpr wchar_t kCourseBoardPath[] = L"/api/course/board";
 constexpr wchar_t kChartGhostPath[] = L"/api/chart/ghost";
 constexpr wchar_t kIrLoginPath[] = L"/api/ir/login";
 
+constexpr const char* kWebRankingUrlBase = "https://ir.stellabms.xyz/redirecthash/";
 constexpr const char* kWebRankingUrlTemplate = "https://ir.stellabms.xyz/redirecthash/{hash}";
 
 std::wstring Utf8ToWide(std::string_view utf8) {
@@ -161,6 +162,10 @@ const wchar_t* HttpAuth_Path(HttpAuthEndpoint endpoint) {
     case HttpAuthEndpoint::IrLogin: return kIrLoginPath;
     }
     return L"";
+}
+
+const char* HttpAuth_WebRankingUrlBase() {
+    return kWebRankingUrlBase;
 }
 
 const char* HttpAuth_WebRankingUrlTemplate() {
