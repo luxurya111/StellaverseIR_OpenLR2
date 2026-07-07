@@ -152,6 +152,10 @@ static openlr2::GetStatus RestoreCachedRank(const char* songHash, int reserved, 
     return openlr2::GetStatus::Fail;
 }
 
+static std::string GetWebRankingUrl(const char* songHash) {
+	return std::format("{}{}", HttpAuth_WebRankingUrlBase(), songHash);
+}
+
 // F5 / IR button: older OpenLR2 reads webRankingUrlTemplate and replaces `{hash}`.
 // Host also requires display IR login (IsDisplayIrOnline) before opening the page.
 extern "C" OLR2_IR_EXPORT void OLR2_IR_API GetMethodTable(MethodTable& table) {
@@ -162,4 +166,5 @@ extern "C" OLR2_IR_EXPORT void OLR2_IR_API GetMethodTable(MethodTable& table) {
     table.RestoreCachedRank = &RestoreCachedRank;
     table.GetGhost = &GetGhost;
     table.webRankingUrlTemplate = HttpAuth_WebRankingUrlTemplate();
+    table.GetWebRankingUrl = &GetWebRankingUrl;
 }
