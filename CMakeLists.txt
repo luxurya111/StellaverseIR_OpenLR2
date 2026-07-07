@@ -32,7 +32,7 @@ target_include_directories(
     PRIVATE ./src/
 )
 
-target_link_libraries(StellaverseIR PRIVATE SQLite3::SQLite3)
+target_link_libraries(StellaverseIR PRIVATE SQLite::SQLite3)
 target_link_libraries(StellaverseIR PRIVATE nlohmann_json::nlohmann_json)
 
 if(WIN32)
