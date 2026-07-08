@@ -27,6 +27,7 @@ struct BoardCacheEntry {
     int rank{};
     int playerId{};
     int exscore{};
+    int notes{};
     int clearType{};
     int pgreat{};
     int great{};
@@ -126,6 +127,7 @@ void ParseBoardSnapshotBody(
                 .rank = JsonFieldOr<int>(item, {"rank"}, 0),
                 .playerId = JsonFieldOr<int>(item, {"player_id", "playerId"}, 0),
                 .exscore = JsonFieldOr<int>(item, {"exscore"}, 0),
+                .notes = JsonFieldOr<int>(item, {"notes"}, 0),
                 .clearType = JsonFieldOr<int>(item, {"clear_type", "clearType"}, 0),
                 .pgreat = JsonFieldOr<int>(item, {"pgreat"}, 0),
                 .great = JsonFieldOr<int>(item, {"great"}, 0),
@@ -171,6 +173,7 @@ void ParseBoardSnapshotBody(
         player.pr = entry.poor;
         player.minbp = entry.minbp;
         player.playcount = entry.playcount;
+        player.notes = entry.notes;
         rank.ranking.push_back(std::move(player));
     }
     if (const auto fetchedAt = JsonField<std::int64_t>(body, {"fetched_at"})) {
@@ -208,6 +211,7 @@ void WriteBoardCachesFromSnapshot(
             {"player_id", entry.playerId},
             {"display_name", entry.displayName},
             {"exscore", entry.exscore},
+            {"notes", entry.notes},
             {"clear_type", entry.clearType},
             {"pgreat", entry.pgreat},
             {"great", entry.great},
