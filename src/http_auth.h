@@ -10,6 +10,8 @@ enum class HttpAuthEndpoint {
     CourseBoard,
     ChartGhost,
     IrLogin,
+    IrRivals,
+    IrRival,
 };
 
 // Builds WinHTTP request headers including authentication.

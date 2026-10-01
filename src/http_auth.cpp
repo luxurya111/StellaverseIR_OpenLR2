@@ -30,6 +30,8 @@ constexpr wchar_t kChartBoardPath[] = L"/api/chart/board";
 constexpr wchar_t kCourseBoardPath[] = L"/api/course/board";
 constexpr wchar_t kChartGhostPath[] = L"/api/chart/ghost";
 constexpr wchar_t kIrLoginPath[] = L"/api/ir/login";
+constexpr wchar_t kIrRivalsPath[] = L"/api/ir/rivals";
+constexpr wchar_t kIrRivalPath[] = L"/api/ir/rival";
 
 constexpr const char* kWebRankingUrlBase = "https://ir.stellabms.xyz/redirecthash/";
 constexpr const char* kWebRankingUrlTemplate = "https://ir.stellabms.xyz/redirecthash/{hash}";
@@ -160,6 +162,8 @@ const wchar_t* HttpAuth_Path(HttpAuthEndpoint endpoint) {
     case HttpAuthEndpoint::CourseBoard: return kCourseBoardPath;
     case HttpAuthEndpoint::ChartGhost: return kChartGhostPath;
     case HttpAuthEndpoint::IrLogin: return kIrLoginPath;
+    case HttpAuthEndpoint::IrRivals: return kIrRivalsPath;
+    case HttpAuthEndpoint::IrRival: return kIrRivalPath;
     }
     return L"";
 }
@@ -183,6 +187,10 @@ const char* HttpAuth_EndpointTag(HttpAuthEndpoint endpoint) {
         return "course";
     case HttpAuthEndpoint::IrLogin:
         return "ir_login";
+    case HttpAuthEndpoint::IrRivals:
+        return "ir_rivals";
+    case HttpAuthEndpoint::IrRival:
+        return "ir_rival";
     }
     return "unknown";
 }

@@ -14,11 +14,13 @@ LR2files/CustomIRs/StellaverseIR/
   - key.txt
   - StellaverseIR.x64.dll (or StellaverseIR.x86.dll)
   - StellaverseIR.x64.pdb (optional, if you are a developer)
+  - IR/          (rank caches, created at runtime)
+  - Rival/       (module-private rival JSON cache, created at runtime)
 ```
 
 `key.txt` is a plain-text file containing only the API key. Do not share it.
 
-Set OpenLR2's display IR (`display_ir`) to `StellaverseIR` if you want Stellaverse leaderboards, ghosts, and the F5 web ranking button.
+Set OpenLR2's display IR (`display_ir`) to `StellaverseIR` if you want Stellaverse leaderboards, ghosts, F5 web ranking, and **CustomIR rival folders**.
 
 ## Building
 

@@ -22,6 +22,7 @@ target_sources(
         ./src/http_auth.cpp
         ./src/log.cpp
         ./src/rank.cpp
+        ./src/rival.cpp
         ./src/score_db.cpp
         ./src/score_payload.cpp
 )

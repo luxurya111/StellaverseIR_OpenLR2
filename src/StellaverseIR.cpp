@@ -1,13 +1,16 @@
 ﻿#include <LR2_customir_api.h>
 
+#include "constants.h"
 #include "http.h"
 #include "http_auth.h"
 #include "json_util.h"
 #include "log.h"
 #include "rank.h"
+#include "rival.h"
 #include "score_db.h"
 #include "score_payload.h"
 
+#include <filesystem>
 #include <format>
 #include <string>
 
@@ -156,6 +159,89 @@ static std::string GetWebRankingUrl(const char* songHash) {
 	return std::format("{}{}", HttpAuth_WebRankingUrlBase(), songHash);
 }
 
+static openlr2::GetStatus GetRivals(openlr2::IRRivalListResult& out) {
+    out = {};
+    std::error_code ec;
+    std::filesystem::create_directories(RivalDirectory(), ec);
+
+    json body;
+    switch (FetchRivalList(body)) {
+    case HttpStatus::Ok:
+        if (!WriteRivalListCache(body)) {
+            return openlr2::GetStatus::Fail;
+        }
+        break;
+    case HttpStatus::Retry:
+        return openlr2::GetStatus::Retry;
+    case HttpStatus::Fail:
+        if (!ReadJsonFile(RivalDirectory() / "rivals.json", body)) {
+            return openlr2::GetStatus::Fail;
+        }
+        DebugLog("WARN", "rival_list_using_cache_after_fetch_fail", {});
+        break;
+    }
+
+    const json listBody = BuildRivalListCache(body);
+
+    out.fetched_at = static_cast<uint64_t>(JsonFieldOr<std::int64_t>(listBody, {"fetched_at"}, UnixTimeNow()));
+    if (const auto it = listBody.find("rivals"); it != listBody.end() && it->is_array()) {
+        for (const auto& entry : *it) {
+            openlr2::IRRivalInfo info{};
+            info.id = JsonFieldOr<int>(entry, {"id"}, 0);
+            info.name = JsonFieldOr<std::string>(entry, {"name"}, {});
+            if (info.id > 0) {
+                out.rivals.push_back(std::move(info));
+            }
+        }
+    }
+    DebugLog("INFO", "rival_list_ok", std::format("count={}", out.rivals.size()));
+    return openlr2::GetStatus::Ok;
+}
+
+static openlr2::GetStatus SyncRivalScores(int rivalId, uint64_t lastUpdateHint, std::vector<openlr2::IRRivalScore>& out) {
+    out.clear();
+    if (rivalId < 1) {
+        return openlr2::GetStatus::Fail;
+    }
+    std::error_code ec;
+    std::filesystem::create_directories(RivalDirectory(), ec);
+
+    json existing;
+    if (ReadRivalScoreJsonCache(rivalId, existing)) {
+        const auto fetchedAt = JsonField<std::int64_t>(existing, {"fetched_at"});
+        const auto lastupdate = JsonFieldOr<std::uint64_t>(existing, {"lastupdate"}, 0);
+        const bool ttlFresh = fetchedAt && (UnixTimeNow() - *fetchedAt) < kRivalCacheTtlSeconds;
+        const bool hintOk = lastUpdateHint == 0 || lastupdate >= lastUpdateHint;
+        if (ttlFresh && hintOk) {
+            FillRivalScoresFromJson(existing, out);
+            DebugLog("INFO", "rival_scores_ttl_skip", std::format("id={} scores={}", rivalId, out.size()));
+            return openlr2::GetStatus::Ok;
+        }
+    }
+
+    json scoreBody;
+    switch (FetchRivalScore(rivalId, scoreBody)) {
+    case HttpStatus::Ok:
+        if (!WriteRivalScoreJsonCache(rivalId, scoreBody)) {
+            return openlr2::GetStatus::Fail;
+        }
+        existing = std::move(scoreBody);
+        break;
+    case HttpStatus::Retry:
+        return openlr2::GetStatus::Retry;
+    case HttpStatus::Fail:
+        if (!ReadRivalScoreJsonCache(rivalId, existing)) {
+            return openlr2::GetStatus::Fail;
+        }
+        DebugLog("WARN", "rival_scores_using_cache_after_fetch_fail", std::format("id={}", rivalId));
+        break;
+    }
+
+    FillRivalScoresFromJson(existing, out);
+    DebugLog("INFO", "rival_scores_ok", std::format("id={} scores={}", rivalId, out.size()));
+    return openlr2::GetStatus::Ok;
+}
+
 // F5 / IR button: older OpenLR2 reads webRankingUrlTemplate and replaces `{hash}`.
 // Host also requires display IR login (IsDisplayIrOnline) before opening the page.
 extern "C" OLR2_IR_EXPORT void OLR2_IR_API GetMethodTable(MethodTable& table) {
@@ -167,4 +253,6 @@ extern "C" OLR2_IR_EXPORT void OLR2_IR_API GetMethodTable(MethodTable& table) {
     table.GetGhost = &GetGhost;
     table.webRankingUrlTemplate = HttpAuth_WebRankingUrlTemplate();
     table.GetWebRankingUrl = &GetWebRankingUrl;
+    table.GetRivals = &GetRivals;
+    table.SyncRivalScores = &SyncRivalScores;
 }

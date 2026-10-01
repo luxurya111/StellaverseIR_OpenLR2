@@ -1,5 +1,6 @@
 #include "http.h"
 
+#include "constants.h"
 #include "http_auth.h"
 #include "log.h"
 
@@ -30,6 +31,9 @@ std::string ReadHttpResponseBody(HINTERNET request, std::size_t maxBytes) {
         }
         chunk.resize(read);
         body += chunk;
+    }
+    if (body.size() >= maxBytes) {
+        DebugLog("WARN", "http_response_truncated", std::format("max_bytes={}", maxBytes));
     }
     return body;
 }
@@ -206,6 +210,7 @@ HttpStatus HttpGetJson(
         DebugLogWin32Error("http_winhttp_open_fail");
         return HttpStatus::Retry;
     }
+    WinHttpSetTimeouts(session, 10000, 10000, 30000, kHttpGetReceiveTimeoutMs);
 
     DWORD dwHttp2 = WINHTTP_PROTOCOL_FLAG_HTTP2;
     DWORD dwSslProtocols = WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2 | WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3;
@@ -282,7 +287,7 @@ HttpStatus HttpGetJson(
     const HttpStatus mapped = statusCode >= 200 && statusCode < 300 ? HttpStatus::Ok
         : statusCode >= 400 && statusCode < 500 ? HttpStatus::Fail
         : HttpStatus::Retry;
-    bodyOut = ReadHttpResponseBody(request, 262144);
+    bodyOut = ReadHttpResponseBody(request, kHttpGetMaxResponseBytes);
 
     WinHttpCloseHandle(request);
     WinHttpCloseHandle(connect);
