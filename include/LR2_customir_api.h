@@ -269,6 +269,49 @@ struct IRRivalListResult {
 	uint64_t fetched_at{};
 };
 
+// Stellaverse Arena (LR2ArenaEx-style multiplayer via display_ir vendor).
+struct ArenaPeerScore {
+	int poor{};
+	int bad{};
+	int good{};
+	int great{};
+	int pgreat{};
+	int maxCombo{};
+	int score{};
+	int currentNotes{};
+};
+
+struct ArenaPeer {
+	int playerId{};
+	std::string username;
+	bool isHost{};
+	bool ready{};
+	std::string selectedHash;
+	unsigned option{};
+	unsigned gauge{};
+	ArenaPeerScore score{};
+};
+
+struct ArenaRoomState {
+	std::string roomId;
+	int hostId{};
+	int selfPlayerId{};
+	bool connected{};
+	bool itemModeEnabled{};
+	int randomSeed{};
+	std::string chartHash;
+	std::string chartTitle;
+	std::string chartArtist;
+	std::vector<ArenaPeer> players;
+	std::vector<std::string> chatLog;
+};
+
+struct ArenaJoinResult {
+	std::string roomId;
+	std::string wsUrl;
+	std::string token;
+};
+
 } // namespace openlr2
 
 struct MethodTable {
@@ -311,8 +354,36 @@ struct MethodTable {
 	// The module may use it only to skip HTTP / read its private cache.
 	// On Ok: out is a complete snapshot of that rival's scores. OpenLR2 writes .db and .lr2folder.
 	openlr2::GetStatus(OLR2_IR_API* SyncRivalScores)(int rivalId, uint64_t lastUpdateHint, std::vector<openlr2::IRRivalScore>& out) = nullptr;
+
+	// Arena (optional; nullptr = vendor does not support Arena).
+	openlr2::GetStatus(OLR2_IR_API* ArenaJoinRoom)(const char* roomId, openlr2::ArenaJoinResult& out) = nullptr;
+	openlr2::GetStatus(OLR2_IR_API* ArenaJoinActiveRoom)(openlr2::ArenaJoinResult& out) = nullptr;
+	void(OLR2_IR_API* ArenaLeave)() = nullptr;
+	bool(OLR2_IR_API* ArenaIsConnected)() = nullptr;
+	void(OLR2_IR_API* ArenaPollState)(openlr2::ArenaRoomState& out) = nullptr;
+	void(OLR2_IR_API* ArenaSendSelectedChart)(
+		int randomSeed,
+		const char* hash,
+		const char* title,
+		const char* artist,
+		unsigned option,
+		unsigned gauge,
+		bool itemModeEnabled
+	) = nullptr;
+	void(OLR2_IR_API* ArenaSendScore)(const openlr2::ArenaPeerScore& score, bool finalScore) = nullptr;
+	void(OLR2_IR_API* ArenaSendReady)() = nullptr;
+	void(OLR2_IR_API* ArenaSendCancelled)() = nullptr;
+	void(OLR2_IR_API* ArenaSendChat)(const char* message) = nullptr;
+	void(OLR2_IR_API* ArenaSendMissingChart)() = nullptr;
+	void(OLR2_IR_API* ArenaSendItemJson)(const char* jsonObject) = nullptr;
+	openlr2::GetStatus(OLR2_IR_API* ArenaSubmitRoomResult)(
+		const char* roomId,
+		const char* chartHash,
+		const char* resultJson
+	) = nullptr;
+
 	// Forward compatibility.
 	// This field will always be moved to the end of the struct when new fields are added.
 	// Thanks to this CustomIR module designed for newer game version won't write out-of-bounds memory when assigning fields of older MethodTable.
-	void* _trailing_field_to_increase_struct_size[6]{};
+	void* _trailing_field_to_increase_struct_size[2]{};
 };

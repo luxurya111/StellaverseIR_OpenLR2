@@ -8,6 +8,7 @@
 #include <chrono>
 #include <format>
 #include <string>
+#include <string_view>
 #include <thread>
 
 #include <windows.h>
@@ -301,6 +302,150 @@ HttpStatus HttpGetJson(
         std::format("status_code={} mapped_status={} body_size={}", statusCode, mappedName, bodyOut.size())
     );
     return mapped;
+}
+
+namespace {
+
+HttpStatus PerformJsonRequestPath(
+    const wchar_t* method,
+    const std::wstring& path,
+    const std::string& queryString,
+    const std::string& body,
+    const std::string& apiKey,
+    std::string& bodyOut,
+    unsigned long* statusOut
+) {
+    bodyOut.clear();
+    if (statusOut != nullptr) {
+        *statusOut = 0;
+    }
+    const bool isGet = std::wstring_view(method) == L"GET";
+    const std::wstring userAgentWide = HttpAuth_UserAgent();
+    if (userAgentWide.empty() || path.empty() || path.front() != L'/') {
+        DebugLog("ERROR", "http_path_invalid", {});
+        return HttpStatus::Fail;
+    }
+
+    std::wstring requestPath = path;
+    if (isGet && !queryString.empty()) {
+        requestPath += L'?';
+        requestPath.append(queryString.begin(), queryString.end());
+    }
+
+    HINTERNET session = WinHttpOpen(
+        userAgentWide.c_str(),
+        WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+        WINHTTP_NO_PROXY_NAME,
+        WINHTTP_NO_PROXY_BYPASS,
+        0
+    );
+    if (session == nullptr) {
+        DebugLogWin32Error("http_path_open_fail");
+        return HttpStatus::Retry;
+    }
+    WinHttpSetTimeouts(session, 10000, 10000, 15000, 15000);
+
+    DWORD dwHttp2 = WINHTTP_PROTOCOL_FLAG_HTTP2;
+    DWORD dwSslProtocols = WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2 | WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3;
+    WinHttpSetOption(session, WINHTTP_OPTION_ENABLE_HTTP_PROTOCOL, &dwHttp2, sizeof(dwHttp2));
+    WinHttpSetOption(session, WINHTTP_OPTION_SECURE_PROTOCOLS, &dwSslProtocols, sizeof(dwSslProtocols));
+
+    HINTERNET connect = WinHttpConnect(session, HttpAuth_Host(), static_cast<INTERNET_PORT>(HttpAuth_Port()), 0);
+    if (connect == nullptr) {
+        DebugLogWin32Error("http_path_connect_fail");
+        WinHttpCloseHandle(session);
+        return HttpStatus::Retry;
+    }
+
+    HINTERNET request = WinHttpOpenRequest(
+        connect,
+        method,
+        requestPath.c_str(),
+        nullptr,
+        WINHTTP_NO_REFERER,
+        WINHTTP_DEFAULT_ACCEPT_TYPES,
+        static_cast<DWORD>(HttpAuth_RequestFlags())
+    );
+    if (request == nullptr) {
+        DebugLogWin32Error("http_path_request_fail");
+        WinHttpCloseHandle(connect);
+        WinHttpCloseHandle(session);
+        return HttpStatus::Retry;
+    }
+    DWORD dwDecompression = WINHTTP_DECOMPRESSION_FLAG_GZIP | WINHTTP_DECOMPRESSION_FLAG_DEFLATE;
+    WinHttpSetOption(request, WINHTTP_OPTION_DECOMPRESSION, &dwDecompression, sizeof(dwDecompression));
+
+    const std::wstring headers = HttpAuth_BuildHeaders(apiKey, isGet ? queryString : body);
+    if (headers.empty()) {
+        DebugLog("ERROR", "http_auth_headers_fail", {});
+        WinHttpCloseHandle(request);
+        WinHttpCloseHandle(connect);
+        WinHttpCloseHandle(session);
+        return HttpStatus::Fail;
+    }
+
+    const DWORD bodySize = isGet ? 0 : static_cast<DWORD>(body.size());
+    const BOOL sent = WinHttpSendRequest(
+        request,
+        headers.c_str(),
+        static_cast<DWORD>(-1),
+        bodySize == 0 ? WINHTTP_NO_REQUEST_DATA : const_cast<LPVOID>(static_cast<LPCVOID>(body.data())),
+        bodySize,
+        bodySize,
+        0
+    );
+    if (!sent || !WinHttpReceiveResponse(request, nullptr)) {
+        DebugLogWin32Error("http_path_send_fail");
+        WinHttpCloseHandle(request);
+        WinHttpCloseHandle(connect);
+        WinHttpCloseHandle(session);
+        return HttpStatus::Retry;
+    }
+
+    DWORD statusCode = 0;
+    DWORD statusSize = sizeof(statusCode);
+    WinHttpQueryHeaders(
+        request,
+        WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+        WINHTTP_HEADER_NAME_BY_INDEX,
+        &statusCode,
+        &statusSize,
+        WINHTTP_NO_HEADER_INDEX
+    );
+    bodyOut = ReadHttpResponseBody(request, kHttpGetMaxResponseBytes);
+
+    WinHttpCloseHandle(request);
+    WinHttpCloseHandle(connect);
+    WinHttpCloseHandle(session);
+
+    if (statusOut != nullptr) {
+        *statusOut = statusCode;
+    }
+    return statusCode >= 200 && statusCode < 300 ? HttpStatus::Ok
+        : statusCode >= 400 && statusCode < 500 ? HttpStatus::Fail
+        : HttpStatus::Retry;
+}
+
+} // namespace
+
+HttpStatus HttpGetJsonPath(
+    const std::wstring& path,
+    const std::string& queryString,
+    const std::string& apiKey,
+    std::string& bodyOut,
+    unsigned long* statusOut
+) {
+    return PerformJsonRequestPath(L"GET", path, queryString, {}, apiKey, bodyOut, statusOut);
+}
+
+HttpStatus HttpPostJsonPath(
+    const std::wstring& path,
+    const std::string& body,
+    const std::string& apiKey,
+    std::string& bodyOut,
+    unsigned long* statusOut
+) {
+    return PerformJsonRequestPath(L"POST", path, {}, body, apiKey, bodyOut, statusOut);
 }
 
 HttpStatus FetchWithRetry(const std::function<HttpStatus()>& attempt) {

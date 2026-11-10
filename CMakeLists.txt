@@ -18,6 +18,7 @@ target_sources(
     StellaverseIR
     PRIVATE
         ./src/StellaverseIR.cpp
+        ./src/arena.cpp
         ./src/http.cpp
         ./src/http_auth.cpp
         ./src/log.cpp

@@ -32,6 +32,8 @@ constexpr wchar_t kChartGhostPath[] = L"/api/chart/ghost";
 constexpr wchar_t kIrLoginPath[] = L"/api/ir/login";
 constexpr wchar_t kIrRivalsPath[] = L"/api/ir/rivals";
 constexpr wchar_t kIrRivalPath[] = L"/api/ir/rival";
+constexpr wchar_t kArenaRoomsPath[] = L"/api/arena/rooms";
+constexpr wchar_t kArenaActivePath[] = L"/api/arena/active";
 
 constexpr const char* kWebRankingUrlBase = "https://ir.stellabms.xyz/redirecthash/";
 constexpr const char* kWebRankingUrlTemplate = "https://ir.stellabms.xyz/redirecthash/{hash}";
@@ -164,8 +166,46 @@ const wchar_t* HttpAuth_Path(HttpAuthEndpoint endpoint) {
     case HttpAuthEndpoint::IrLogin: return kIrLoginPath;
     case HttpAuthEndpoint::IrRivals: return kIrRivalsPath;
     case HttpAuthEndpoint::IrRival: return kIrRivalPath;
+    case HttpAuthEndpoint::ArenaCreateRoom: return kArenaRoomsPath;
+    case HttpAuthEndpoint::ArenaActive: return kArenaActivePath;
+    case HttpAuthEndpoint::ArenaJoinRoom:
+    case HttpAuthEndpoint::ArenaLeave:
+    case HttpAuthEndpoint::ArenaResult:
+        break; // per-room: see HttpAuth_ArenaPath
     }
     return L"";
+}
+
+std::wstring HttpAuth_ArenaPath(HttpAuthEndpoint endpoint, std::string_view roomId) {
+    const wchar_t* suffix = nullptr;
+    switch (endpoint) {
+    case HttpAuthEndpoint::ArenaCreateRoom: return kArenaRoomsPath;
+    case HttpAuthEndpoint::ArenaActive: return kArenaActivePath;
+    case HttpAuthEndpoint::ArenaJoinRoom: suffix = L"/join"; break;
+    case HttpAuthEndpoint::ArenaLeave: suffix = L"/leave"; break;
+    case HttpAuthEndpoint::ArenaResult: suffix = L"/result"; break;
+    default: return {};
+    }
+    if (roomId.empty()) {
+        return {};
+    }
+    // Percent-encode everything outside the RFC 3986 unreserved set.
+    std::wstring path = kArenaRoomsPath;
+    path += L'/';
+    constexpr wchar_t kHex[] = L"0123456789ABCDEF";
+    for (const unsigned char c : roomId) {
+        const bool unreserved = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
+            || c == '-' || c == '.' || c == '_' || c == '~';
+        if (unreserved) {
+            path += static_cast<wchar_t>(c);
+        } else {
+            path += L'%';
+            path += kHex[c >> 4];
+            path += kHex[c & 0x0F];
+        }
+    }
+    path += suffix;
+    return path;
 }
 
 const char* HttpAuth_WebRankingUrlBase() {
@@ -191,6 +231,16 @@ const char* HttpAuth_EndpointTag(HttpAuthEndpoint endpoint) {
         return "ir_rivals";
     case HttpAuthEndpoint::IrRival:
         return "ir_rival";
+    case HttpAuthEndpoint::ArenaCreateRoom:
+        return "arena_create";
+    case HttpAuthEndpoint::ArenaActive:
+        return "arena_active";
+    case HttpAuthEndpoint::ArenaJoinRoom:
+        return "arena_join";
+    case HttpAuthEndpoint::ArenaLeave:
+        return "arena_leave";
+    case HttpAuthEndpoint::ArenaResult:
+        return "arena_result";
     }
     return "unknown";
 }
