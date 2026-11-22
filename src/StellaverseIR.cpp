@@ -1,5 +1,6 @@
-﻿#include <LR2_customir_api.h>
+#include <LR2_customir_api.h>
 
+#include "arena.h"
 #include "constants.h"
 #include "http.h"
 #include "http_auth.h"
@@ -255,4 +256,20 @@ extern "C" OLR2_IR_EXPORT void OLR2_IR_API GetMethodTable(MethodTable& table) {
     table.GetWebRankingUrl = &GetWebRankingUrl;
     table.GetRivals = &GetRivals;
     table.SyncRivalScores = &SyncRivalScores;
+
+    table.ArenaJoinRoom = &stellaverse_arena::JoinRoom;
+    table.ArenaLeave = &stellaverse_arena::Leave;
+    table.ArenaIsConnected = &stellaverse_arena::IsConnected;
+    table.ArenaPollState = &stellaverse_arena::PollState;
+    table.ArenaSendSelectedChart = &stellaverse_arena::SendSelectedChart;
+    table.ArenaSendScore = &stellaverse_arena::SendScore;
+    table.ArenaSendReady = &stellaverse_arena::SendReady;
+    table.ArenaSendCancelled = &stellaverse_arena::SendCancelled;
+    table.ArenaSendChat = &stellaverse_arena::SendChat;
+    table.ArenaSendMissingChart = &stellaverse_arena::SendMissingChart;
+    table.ArenaSetHost = &stellaverse_arena::SetHost;
+    table.ArenaKickUser = &stellaverse_arena::KickUser;
+    table.ArenaSendItemJson = &stellaverse_arena::SendItemJson;
+    table.ArenaSendItemSettingsJson = &stellaverse_arena::SendItemSettingsJson;
+    table.ArenaSubmitRoomResult = &stellaverse_arena::SubmitRoomResult;
 }

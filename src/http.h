@@ -27,4 +27,24 @@ SendScoreStatus PostScoreJson(
     HttpAuthEndpoint endpoint
 );
 
+// Generic HMAC-signed requests against an arbitrary path on the IR host (Arena).
+// Signing matches HttpGetJson / PostScoreJson: payload is the query string (GET)
+// or the raw body (POST). `path` must start with '/'. Response body (any status)
+// is stored in `bodyOut`; the HTTP status code (0 on transport failure) in `statusOut`.
+HttpStatus HttpGetJsonPath(
+    const std::wstring& path,
+    const std::string& queryString,
+    const std::string& apiKey,
+    std::string& bodyOut,
+    unsigned long* statusOut = nullptr
+);
+
+HttpStatus HttpPostJsonPath(
+    const std::wstring& path,
+    const std::string& body,
+    const std::string& apiKey,
+    std::string& bodyOut,
+    unsigned long* statusOut = nullptr
+);
+
 HttpStatus FetchWithRetry(const std::function<HttpStatus()>& attempt);

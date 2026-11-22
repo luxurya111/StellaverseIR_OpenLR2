@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.23)
 
 project(StellaverseIR_OpenLR2)
 
@@ -18,6 +18,7 @@ target_sources(
     StellaverseIR
     PRIVATE
         ./src/StellaverseIR.cpp
+        ./src/arena.cpp
         ./src/http.cpp
         ./src/http_auth.cpp
         ./src/log.cpp
