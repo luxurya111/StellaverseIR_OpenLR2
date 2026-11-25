@@ -3,10 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 
-// Rank cache
-inline constexpr std::int64_t kRankCacheTtlSeconds = 604800; // 7 days
-
-// Rival cache (same default TTL as rank cache for now)
+// Rival cache
 inline constexpr std::int64_t kRivalCacheTtlSeconds = 604800; // 7 days
 
 // Rival snapshots can be much larger than board/ghost payloads.
