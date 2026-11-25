@@ -86,18 +86,6 @@ std::filesystem::path RankCacheDirectory() {
     return GetModuleDirectory() / "IR";
 }
 
-bool ReadFreshCacheFile(const std::filesystem::path& path, json& out) {
-    if (!ReadJsonFile(path, out)) {
-        return false;
-    }
-    const auto fetchedAt = JsonField<std::int64_t>(out, {"fetched_at"});
-    if (!fetchedAt) {
-        return false;
-    }
-    const std::int64_t age = UnixTimeNow() - *fetchedAt;
-    return age >= 0 && age < kRankCacheTtlSeconds;
-}
-
 void ParseBoardSnapshotBody(
     const json& body,
     openlr2::IRRankResult& rank,
@@ -246,7 +234,7 @@ void InvalidateChartRankCaches(std::string_view hash) {
 bool TryReadRankCache(std::string_view hash, openlr2::IRRankResult& out) {
     json body;
     const auto path = RankCacheDirectory() / (RankCacheStorageKey(hash) + ".json");
-    if (!ReadFreshCacheFile(path, body)) {
+    if (!ReadJsonFile(path, body)) {
         return false;
     }
     openlr2::IRRankResult parsed{};
